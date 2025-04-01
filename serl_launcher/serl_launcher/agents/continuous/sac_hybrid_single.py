@@ -234,7 +234,7 @@ class SACAgentHybridSingleArm(flax.struct.PyTreeNode):
         """classes that inherit this class can change this function"""
 
         batch_size = batch["rewards"].shape[0]
-        grasp_action = (batch["actions"][..., -1]).astype(jnp.int16) + 1 # Cast env action from [-1, 1] to {0, 1, 2}
+        grasp_action = jnp.round(batch["actions"][..., -1]).astype(jnp.int16) + 1 # Cast env action from [-1, 1] to {0, 1, 2}
 
          # Evaluate next grasp Qs for all ensemble members (cheap because we're only doing the forward pass)
         target_next_grasp_qs = self.forward_target_grasp_critic(
