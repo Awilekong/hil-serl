@@ -234,8 +234,8 @@ class SACAgentHybridDualArm(flax.struct.PyTreeNode):
         """classes that inherit this class can change this function"""
 
         batch_size = batch["rewards"].shape[0]
-        grasp_action1 = (batch["actions"][..., 6]).astype(jnp.int16) + 1  # Cast env action from [-1, 1] to {0, 1, 2}
-        grasp_action2 = (batch["actions"][..., 13]).astype(jnp.int16) + 1  # Cast env action from [-1, 1] to {0, 1, 2}
+        grasp_action1 = jnp.round(batch["actions"][..., 6]).astype(jnp.int16) + 1  # Cast env action from [-1, 1] to {0, 1, 2}
+        grasp_action2 = jnp.round(batch["actions"][..., 13]).astype(jnp.int16) + 1  # Cast env action from [-1, 1] to {0, 1, 2}
         
         # Combine the two grasp actions into a single joint action ranging from 0 to 8
         joint_grasp_action = grasp_action1 * 3 + grasp_action2  # 0 ≤ joint_grasp_action < 9
