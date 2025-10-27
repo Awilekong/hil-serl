@@ -5,6 +5,7 @@ import numpy as np
 def construct_adjoint_matrix(tcp_pose):
     """
     Construct the adjoint matrix for a spatial velocity vector
+    Used for the robot controlled by twist.
     :args: tcp_pose: (x, y, z, qx, qy, qz, qw)
     """
     rotation = R.from_quat(tcp_pose[3:]).as_matrix()
@@ -22,6 +23,17 @@ def construct_adjoint_matrix(tcp_pose):
     adjoint_matrix[3:, :3] = skew_matrix @ rotation
     return adjoint_matrix
 
+def construct_transform_matrix(tcp_pose):
+    """
+    Construct the transform matrix from given pose.
+    Used for the robot controlled by pose like provided franka delta pose controller.
+    :args: tcp_pose: (x, y, z, qx, qy, qz, qw)
+    """
+    rotation = R.from_quat(tcp_pose[3:]).as_matrix()
+    transform_matrix = np.zeros((6, 6))
+    transform_matrix[:3, :3] = rotation
+    transform_matrix[3:, 3:] = rotation
+    return transform_matrix
 
 def construct_homogeneous_matrix(tcp_pose):
     """
