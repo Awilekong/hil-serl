@@ -4,7 +4,7 @@ import gymnasium as gym
 import numpy as np
 from gym import Env
 from franka_env.utils.transformations import (
-    construct_adjoint_matrix,
+    construct_transform_matrix,
     construct_homogeneous_matrix,
 )
 
@@ -29,7 +29,7 @@ class RelativeFrame(gym.Wrapper):
 
     def __init__(self, env: Env, include_relative_pose=True):
         super().__init__(env)
-        self.adjoint_matrix = np.zeros((6, 6))
+        self.transform_matrix = np.zeros((6, 6))
 
         self.include_relative_pose = include_relative_pose
         if self.include_relative_pose:
@@ -47,8 +47,8 @@ class RelativeFrame(gym.Wrapper):
         if "intervene_action" in info:
             info["intervene_action"] = self.transform_action_inv(info["intervene_action"])
 
-        # Update adjoint matrix
-        self.adjoint_matrix = construct_adjoint_matrix(obs["state"]["tcp_pose"])
+        # Update transform matrix
+        self.transform_matrix = construct_transform_matrix(obs["state"]["tcp_pose"])
 
         # Transform observation to spatial frame
         transformed_obs = self.transform_observation(obs)
@@ -58,8 +58,8 @@ class RelativeFrame(gym.Wrapper):
         obs, info = self.env.reset(**kwargs)
         info['original_state_obs'] = copy.deepcopy(obs['state'])
 
-        # Update adjoint matrix
-        self.adjoint_matrix = construct_adjoint_matrix(obs["state"]["tcp_pose"])
+        # Update transform matrix
+        self.transform_matrix = construct_transform_matrix(obs["state"]["tcp_pose"])
         if self.include_relative_pose:
             # Update transformation matrix from the reset pose's relative frame to base frame
             self.T_r_o_inv = np.linalg.inv(
@@ -72,10 +72,10 @@ class RelativeFrame(gym.Wrapper):
     def transform_observation(self, obs):
         """
         Transform observations from spatial(base) frame into body(end-effector) frame
-        using the adjoint matrix
+        using the transform matrix
         """
-        adjoint_inv = np.linalg.inv(self.adjoint_matrix)
-        obs["state"]["tcp_vel"] = adjoint_inv @ obs["state"]["tcp_vel"]
+        transform_inv = np.linalg.inv(self.transform_matrix)
+        obs["state"]["tcp_vel"] = transform_inv @ obs["state"]["tcp_vel"]
 
         if self.include_relative_pose:
             T_b_o = construct_homogeneous_matrix(obs["state"]["tcp_pose"])
@@ -91,19 +91,19 @@ class RelativeFrame(gym.Wrapper):
     def transform_action(self, action: np.ndarray):
         """
         Transform action from body(end-effector) frame into into spatial(base) frame
-        using the adjoint matrix. 
+        using the transform matrix. 
         """
         action = np.array(action)  # in case action is a jax read-only array
-        action[:6] = self.adjoint_matrix @ action[:6]
+        action[:6] = self.transform_matrix @ action[:6]
         return action
 
     def transform_action_inv(self, action: np.ndarray):
         """
         Transform action from spatial(base) frame into body(end-effector) frame
-        using the adjoint matrix.
+        using the transform matrix.
         """
         action = np.array(action)
-        action[:6] = np.linalg.inv(self.adjoint_matrix) @ action[:6]
+        action[:6] = np.linalg.inv(self.transform_matrix) @ action[:6]
         return action
 
 
@@ -129,8 +129,8 @@ class DualRelativeFrame(gym.Wrapper):
 
     def __init__(self, env: Env, include_relative_pose=True):
         super().__init__(env)
-        self.left_adjoint_matrix = np.zeros((6, 6))
-        self.right_adjoint_matrix = np.zeros((6, 6))
+        self.left_transform_matrix = np.zeros((6, 6))
+        self.right_transform_matrix = np.zeros((6, 6))
 
         self.include_relative_pose = include_relative_pose
         if self.include_relative_pose:
@@ -148,9 +148,9 @@ class DualRelativeFrame(gym.Wrapper):
         if "intervene_action" in info:
             info["intervene_action"] = self.transform_action_inv(info["intervene_action"])
 
-        # Update adjoint matrix
-        self.left_adjoint_matrix = construct_adjoint_matrix(obs["state"]["left/tcp_pose"])
-        self.right_adjoint_matrix = construct_adjoint_matrix(obs["state"]["right/tcp_pose"])
+        # Update transform matrix
+        self.left_transform_matrix = construct_transform_matrix(obs["state"]["left/tcp_pose"])
+        self.right_transform_matrix = construct_transform_matrix(obs["state"]["right/tcp_pose"])
 
         # Transform observation to spatial frame
         transformed_obs = self.transform_observation(obs)
@@ -159,9 +159,9 @@ class DualRelativeFrame(gym.Wrapper):
     def reset(self, **kwargs):
         obs, info = self.env.reset(**kwargs)
 
-        # Update adjoint matrix
-        self.left_adjoint_matrix = construct_adjoint_matrix(obs["state"]["left/tcp_pose"])
-        self.right_adjoint_matrix = construct_adjoint_matrix(obs["state"]["right/tcp_pose"])
+        # Update transform matrix
+        self.left_transform_matrix = construct_transform_matrix(obs["state"]["left/tcp_pose"])
+        self.right_transform_matrix = construct_transform_matrix(obs["state"]["right/tcp_pose"])
 
         if self.include_relative_pose:
             # Update transformation matrix from the reset pose's relative frame to base frame
@@ -177,13 +177,13 @@ class DualRelativeFrame(gym.Wrapper):
     def transform_observation(self, obs):
         """
         Transform observations from spatial(base) frame into body(end-effector) frame
-        using the adjoint matrix
+        using the transform matrix
         """
-        left_adjoint_inv = np.linalg.inv(self.left_adjoint_matrix)
-        obs["state"]["left/tcp_vel"] = left_adjoint_inv @ obs["state"]["left/tcp_vel"]
+        left_transform_inv = np.linalg.inv(self.left_transform_matrix)
+        obs["state"]["left/tcp_vel"] = left_transform_inv @ obs["state"]["left/tcp_vel"]
 
-        right_adjoint_inv = np.linalg.inv(self.right_adjoint_matrix)
-        obs["state"]["right/tcp_vel"] = right_adjoint_inv @ obs["state"]["right/tcp_vel"]
+        right_transform_inv = np.linalg.inv(self.right_transform_matrix)
+        obs["state"]["right/tcp_vel"] = right_transform_inv @ obs["state"]["right/tcp_vel"]
 
         if self.include_relative_pose:
             left_T_b_o = construct_homogeneous_matrix(obs["state"]["left/tcp_pose"])
@@ -208,15 +208,15 @@ class DualRelativeFrame(gym.Wrapper):
     def transform_action(self, action: np.ndarray):
         """
         Transform action from body(end-effector) frame into into spatial(base) frame
-        using the adjoint matrix
+        using the transform matrix
         """
         action = np.array(action)  # in case action is a jax read-only array
         if len(action) == 12:
-            action[:6] = self.left_adjoint_matrix @ action[:6]
-            action[6:] = self.right_adjoint_matrix @ action[6:]
+            action[:6] = self.left_transform_matrix @ action[:6]
+            action[6:] = self.right_transform_matrix @ action[6:]
         elif len(action) == 14:
-            action[:6] = self.left_adjoint_matrix @ action[:6]
-            action[7:13] = self.right_adjoint_matrix @ action[7:13]
+            action[:6] = self.left_transform_matrix @ action[:6]
+            action[7:13] = self.right_transform_matrix @ action[7:13]
         else:
             raise ValueError("Action dimension not supported")
         return action
@@ -224,15 +224,15 @@ class DualRelativeFrame(gym.Wrapper):
     def transform_action_inv(self, action: np.ndarray):
         """
         Transform action from spatial(base) frame into body(end-effector) frame
-        using the adjoint matrix.
+        using the transform matrix.
         """
         action = np.array(action)
         if len(action) == 12:
-            action[:6] = np.linalg.inv(self.left_adjoint_matrix) @ action[:6]
-            action[6:] = np.linalg.inv(self.right_adjoint_matrix) @ action[6:]
+            action[:6] = np.linalg.inv(self.left_transform_matrix) @ action[:6]
+            action[6:] = np.linalg.inv(self.right_transform_matrix) @ action[6:]
         elif len(action) == 14:
-            action[:6] = np.linalg.inv(self.left_adjoint_matrix) @ action[:6]
-            action[7:13] = np.linalg.inv(self.right_adjoint_matrix) @ action[7:13]
+            action[:6] = np.linalg.inv(self.left_transform_matrix) @ action[:6]
+            action[7:13] = np.linalg.inv(self.right_transform_matrix) @ action[7:13]
         else:
             raise ValueError("Action dimension not supported")
         return action
