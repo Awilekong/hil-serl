@@ -30,12 +30,12 @@ class EnvConfig(DefaultEnvConfig):
         "wrist_1": {
             "serial_number": "323622271399",
             "dim": (1280, 720),
-            "exposure": 40000,
+            "exposure": 3000,
         },
         "wrist_2": {
             "serial_number": "323622271298",
             "dim": (1280, 720),
-            "exposure": 40000,
+            "exposure": 3000,
         },
     }
     IMAGE_CROP = {

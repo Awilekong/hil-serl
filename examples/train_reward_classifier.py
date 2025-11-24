@@ -59,18 +59,25 @@ def main(_):
     )
 
     # 加载所有成功样本数据文件
-    success_paths = glob.glob(os.path.join(os.getcwd(), "classifier_data", "*success*.pkl"))
+    # 使用脚本所在目录而不是当前工作目录
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    classifier_data_dir = os.path.join(script_dir, "classifier_data")
+    success_paths = glob.glob(os.path.join(classifier_data_dir, "*success*.pkl"))
+    print(f"找到 {len(success_paths)} 个成功样本文件")
     for path in success_paths:
+        print(f"加载文件: {path}")
         success_data = pkl.load(open(path, "rb"))
+        print(f"  文件中有 {len(success_data)} 个转换")
+        loaded_count = 0
         for trans in success_data:
-            # 跳过包含图像的转换（仅使用非图像观察）
-            if "images" in trans['observations'].keys():
-                continue
+            # 移除了跳过图像的检查，因为分类器需要使用图像数据
             # 为成功样本设置标签为1
             trans["labels"] = 1
             # 随机采样动作（动作本身不用于分类）
             trans['actions'] = env.action_space.sample()
             pos_buffer.insert(trans)
+            loaded_count += 1
+        print(f"  实际加载了 {loaded_count} 个转换")
             
     # 创建正样本迭代器，每次采样batch_size的一半
     pos_iterator = pos_buffer.get_iterator(
@@ -88,20 +95,24 @@ def main(_):
         include_label=True,     # 包含标签信息
     )
     # 加载所有失败样本数据文件
-    failure_paths = glob.glob(os.path.join(os.getcwd(), "classifier_data", "*failure*.pkl"))
+    failure_paths = glob.glob(os.path.join(classifier_data_dir, "*failure*.pkl"))
+    print(f"找到 {len(failure_paths)} 个失败样本文件")
     for path in failure_paths:
+        print(f"加载文件: {path}")
         failure_data = pkl.load(
             open(path, "rb")
         )
+        print(f"  文件中有 {len(failure_data)} 个转换")
+        loaded_count = 0
         for trans in failure_data:
-            # 跳过包含图像的转换
-            if "images" in trans['observations'].keys():
-                continue
+            # 移除了跳过图像的检查，因为分类器需要使用图像数据
             # 为失败样本设置标签为0
             trans["labels"] = 0
             # 随机采样动作
             trans['actions'] = env.action_space.sample()
             neg_buffer.insert(trans)
+            loaded_count += 1
+        print(f"  实际加载了 {loaded_count} 个转换")
             
     # 创建负样本迭代器
     neg_iterator = neg_buffer.get_iterator(
