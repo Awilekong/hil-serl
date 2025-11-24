@@ -45,8 +45,8 @@ class EnvConfig(DefaultEnvConfig):
     TARGET_POSE = np.array([0.5881241235410154,-0.03578590131997776,0.27843494179085326, np.pi, 0, 0])
     GRASP_POSE = np.array([0.5857508505445138,-0.22036261105675414,0.2731021902359492, np.pi, 0, 0])
     RESET_POSE = TARGET_POSE + np.array([0, 0, 0.05, 0, 0.05, 0])
-    ABS_POSE_LIMIT_LOW = TARGET_POSE - np.array([0.03, 0.02, 0.01, 0.01, 0.1, 0.4])
-    ABS_POSE_LIMIT_HIGH = TARGET_POSE + np.array([0.03, 0.02, 0.05, 0.01, 0.1, 0.4])
+    ABS_POSE_LIMIT_LOW = TARGET_POSE - np.array([0.08, 0.06, 0.03, 0.03, 0.3, 0.8])
+    ABS_POSE_LIMIT_HIGH = TARGET_POSE + np.array([0.08, 0.06, 0.12, 0.03, 0.3, 0.8])
     RANDOM_RESET = True
     RANDOM_XY_RANGE = 0.02
     RANDOM_RZ_RANGE = 0.05
@@ -59,12 +59,12 @@ class EnvConfig(DefaultEnvConfig):
         "rotational_stiffness": 150,
         "rotational_damping": 7,
         "translational_Ki": 0,
-        "translational_clip_x": 0.0075,
-        "translational_clip_y": 0.0016,
-        "translational_clip_z": 0.0055,
-        "translational_clip_neg_x": 0.002,
-        "translational_clip_neg_y": 0.0016,
-        "translational_clip_neg_z": 0.005,
+        "translational_clip_x": 0.02,
+        "translational_clip_y": 0.005,
+        "translational_clip_z": 0.015,
+        "translational_clip_neg_x": 0.006,
+        "translational_clip_neg_y": 0.005,
+        "translational_clip_neg_z": 0.012,
         "rotational_clip_x": 0.01,
         "rotational_clip_y": 0.025,
         "rotational_clip_z": 0.005,
@@ -111,7 +111,7 @@ class TrainConfig(DefaultTrainingConfig):
             save_video=save_video,
             config=EnvConfig(),
         )
-        env = GripperCloseEnv(env)
+        # env = GripperCloseEnv(env)  # Commented out to allow gripper control
         if not fake_env:
             env = SpacemouseIntervention(env)
         env = RelativeFrame(env)

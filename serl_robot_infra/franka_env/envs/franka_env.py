@@ -31,8 +31,9 @@ class ImageDisplayer(threading.Thread):
             if img_array is None:  # None is our signal to exit
                 break
 
+            # Increase display size from 128x128 to 480x480 for better visibility
             frame = np.concatenate(
-                [cv2.resize(v, (128, 128)) for k, v in img_array.items() if "full" not in k], axis=1
+                [cv2.resize(v, (480, 480)) for k, v in img_array.items() if "full" not in k], axis=1
             )
 
             cv2.imshow(self.name, frame)
