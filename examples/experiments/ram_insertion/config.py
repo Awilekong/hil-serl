@@ -1,7 +1,13 @@
 import os
+import sys
 import jax
 import jax.numpy as jnp
 import numpy as np
+
+# Add serl_robot_infra and serl_launcher to Python path
+project_root = os.path.join(os.path.dirname(__file__), '..', '..', '..')
+sys.path.insert(0, os.path.join(project_root, 'serl_robot_infra'))
+sys.path.insert(0, os.path.join(project_root, 'serl_launcher'))
 
 from franka_env.envs.wrappers import (
     Quat2EulerWrapper,
@@ -19,15 +25,15 @@ from experiments.config import DefaultTrainingConfig
 from experiments.ram_insertion.wrapper import RAMEnv
 
 class EnvConfig(DefaultEnvConfig):
-    SERVER_URL = "http://127.0.0.2:5000/"
+    SERVER_URL = "http://192.168.31.1:5000/"
     REALSENSE_CAMERAS = {
         "wrist_1": {
-            "serial_number": "127122270146",
+            "serial_number": "323622271399",
             "dim": (1280, 720),
             "exposure": 40000,
         },
         "wrist_2": {
-            "serial_number": "127122270350",
+            "serial_number": "323622271298",
             "dim": (1280, 720),
             "exposure": 40000,
         },
