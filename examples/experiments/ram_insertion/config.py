@@ -50,7 +50,7 @@ class EnvConfig(DefaultEnvConfig):
     RANDOM_RESET = True
     RANDOM_XY_RANGE = 0.02
     RANDOM_RZ_RANGE = 0.05
-    ACTION_SCALE = (0.01, 0.06, 1)
+    ACTION_SCALE = (0.01, 0.06, 1)  # Original scale for training
     DISPLAY_IMAGE = True
     MAX_EPISODE_LENGTH = 100
     COMPLIANCE_PARAM = {
@@ -106,17 +106,30 @@ class TrainConfig(DefaultTrainingConfig):
     setup_mode = "single-arm-fixed-gripper"
 
     def get_environment(self, fake_env=False, save_video=False, classifier=False):
+        print("[DEBUG] 步骤 1/7: 创建 RAMEnv...")
         env = RAMEnv(
             fake_env=fake_env,
             save_video=save_video,
             config=EnvConfig(),
         )
+        print("[DEBUG] 步骤 1/7: RAMEnv 创建完成")
+        
         # env = GripperCloseEnv(env)  # Commented out to allow gripper control
+        
         if not fake_env:
+            print("[DEBUG] 步骤 2/7: 添加 SpacemouseIntervention...")
             env = SpacemouseIntervention(env)
+            print("[DEBUG] 步骤 2/7: SpacemouseIntervention 完成")
+        else:
+            print("[DEBUG] 步骤 2/7: 跳过 (fake_env=True)")
+            
+        print("[DEBUG] 步骤 3/7: 添加 RelativeFrame...")
         env = RelativeFrame(env)
+        print("[DEBUG] 步骤 4/7: 添加 Quat2EulerWrapper...")
         env = Quat2EulerWrapper(env)
+        print("[DEBUG] 步骤 5/7: 添加 SERLObsWrapper...")
         env = SERLObsWrapper(env, proprio_keys=self.proprio_keys)
+        print("[DEBUG] 步骤 6/7: 添加 ChunkingWrapper...")
         env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
         if classifier:
             classifier = load_classifier_func(
@@ -128,8 +141,21 @@ class TrainConfig(DefaultTrainingConfig):
 
             def reward_func(obs):
                 sigmoid = lambda x: 1 / (1 + jnp.exp(-x))
-                # added check for z position to further robustify classifier, but should work without as well
-                return int(sigmoid(classifier(obs)) > 0.85 and obs['state'][0, 6] > 0.04)
+                # classifier output shape: (batch_size=1, 1) due to ChunkingWrapper
+                classifier_logits = classifier(obs)  # shape: (1, 1)
+                # Squeeze to get scalar
+                classifier_logits = jnp.squeeze(classifier_logits)  # shape: ()
+                classifier_prob = sigmoid(classifier_logits)
+                
+                # added check for z position to further robustify classifier
+                # obs['state'] has shape (1, state_dim) due to ChunkingWrapper
+                z_position = obs['state'][0, 6]
+                
+                # Return 1 if both conditions met, 0 otherwise
+                # reward = (classifier_prob > 0.85) & (z_position > 0.04)
+                reward = classifier_prob > 0.3
+
+                return int(reward)
 
             env = MultiCameraBinaryRewardClassifierWrapper(env, reward_func)
         return env

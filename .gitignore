@@ -1,0 +1,32 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data and checkpoints - 忽略训练数据和模型检查点
+classifier_data/
+demo_data/
+classifier_ckpt/
+**/checkpoint_*/
+*.pkl
+
+# Logs
+*.log
+wandb/
+
+# OS
+.DS_Store
+Thumbs.db

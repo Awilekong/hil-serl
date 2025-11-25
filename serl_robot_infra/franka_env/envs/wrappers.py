@@ -46,13 +46,31 @@ class MultiCameraBinaryRewardClassifierWrapper(gym.Wrapper):
 
     def compute_reward(self, obs):
         if self.reward_classifier_func is not None:
-            return self.reward_classifier_func(obs)
-        return 0
+            result = self.reward_classifier_func(obs)
+            # Support both old format (scalar) and new format (dict with details)
+            if isinstance(result, dict):
+                return result
+            else:
+                return {'reward': result, 'probability': None}
+        return {'reward': 0, 'probability': None}
 
     def step(self, action):
         start_time = time.time()
         obs, rew, done, truncated, info = self.env.step(action)
-        rew = self.compute_reward(obs)
+        
+        # Compute reward and get classifier details
+        reward_info = self.compute_reward(obs)
+        rew = reward_info['reward']
+        
+        # Update display with classifier prediction
+        # Find the base environment (unwrap all wrappers)
+        base_env = self.env
+        while hasattr(base_env, 'env'):
+            if hasattr(base_env, 'set_classifier_prediction'):
+                base_env.set_classifier_prediction(rew, reward_info.get('probability'))
+                break
+            base_env = base_env.env
+        
         done = done or rew
         info['succeed'] = bool(rew)
         if self.target_hz is not None:
