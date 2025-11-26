@@ -114,7 +114,7 @@ class TrainConfig(DefaultTrainingConfig):
         )
         print("[DEBUG] 步骤 1/7: RAMEnv 创建完成")
         
-        # env = GripperCloseEnv(env)  # Commented out to allow gripper control
+        env = GripperCloseEnv(env)  # Commented out to allow gripper control
         
         if not fake_env:
             print("[DEBUG] 步骤 2/7: 添加 SpacemouseIntervention...")
@@ -153,7 +153,7 @@ class TrainConfig(DefaultTrainingConfig):
                 
                 # Return 1 if both conditions met, 0 otherwise
                 # reward = (classifier_prob > 0.85) & (z_position > 0.04)
-                reward = classifier_prob > 0.3
+                reward = classifier_prob > 0.5
 
                 return int(reward)
 
