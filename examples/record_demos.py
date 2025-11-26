@@ -115,7 +115,8 @@ def main(_):
     print("="*60)
     print("[CONTROLS] Press SPACE to start/stop recording a trajectory")
     print("[CONTROLS] Press ENTER to reset the environment")
-    print("[CONTROLS] Ctrl+C to finish and save all collected demos")
+    print("[CONTROLS] Ctrl+C to finish and save collected demos")
+    print("           ⚠️  Incomplete trajectories will be discarded!")
     print("="*60 + "\n")
     
     transitions = []
@@ -203,7 +204,38 @@ def main(_):
                 obs = next_obs
                 
     except KeyboardInterrupt:
-        print("\n\n[INFO] Data collection interrupted by user")
+        print("\n\n[INFO] Data collection interrupted by user (Ctrl+C)")
+        
+        # Handle incomplete trajectory
+        if recording and len(trajectory) > 0:
+            print(f"[WARNING] Current trajectory in progress ({len(trajectory)} steps) will be DISCARDED")
+            print("[INFO] Only completed and saved trajectories will be kept")
+            trajectory = []  # Discard incomplete trajectory
+        elif len(trajectory) > 0 and not recording:
+            # Trajectory was just completed but user hasn't decided yet
+            print(f"\n[TRAJECTORY] Collected {len(trajectory)} transitions with total reward: {trajectory_reward_sum:.2f}")
+            print("[PROMPT] Save this trajectory before exit? Press Y (save) or N (discard): ", end='', flush=True)
+            
+            # Wait for user decision
+            waiting_for_save_decision = True
+            save_decision = None
+            
+            # Give user 5 seconds to decide, otherwise discard
+            timeout_start = time.time()
+            while save_decision is None and (time.time() - timeout_start) < 5.0:
+                time.sleep(0.05)
+            
+            waiting_for_save_decision = False
+            
+            if save_decision == 'y':
+                for transition in trajectory:
+                    transitions.append(copy.deepcopy(transition))
+                success_count += 1
+                print(f"\n[SAVE] Final trajectory saved! Total demos: {success_count}/{success_needed}")
+            else:
+                print("\n[DISCARD] Final trajectory discarded (timeout or user choice).")
+            
+            trajectory = []
     finally:
         # Cleanup
         print("\n[INFO] Cleaning up...")
@@ -246,11 +278,24 @@ def main(_):
             os.makedirs("./demo_data")
         uuid = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         file_name = f"./demo_data/{FLAGS.exp_name}_{success_count}_demos_{uuid}.pkl"
-        with open(file_name, "wb") as f:
-            pkl.dump(transitions, f)
-            print(f"\n[SAVE] Saved {len(transitions)} demo transitions ({success_count} trajectories) to {file_name}")
+        
+        print("\n" + "="*60)
+        print(f"[SAVING] Writing {len(transitions)} transitions to disk...")
+        print(f"[FILE] {file_name}")
+        
+        try:
+            with open(file_name, "wb") as f:
+                pkl.dump(transitions, f)
+            print(f"[SUCCESS] ✓ Data saved successfully!")
+            print(f"[SUMMARY] {success_count} trajectories, {len(transitions)} total transitions")
+            print("="*60)
+        except Exception as e:
+            print(f"[ERROR] ✗ Failed to save data: {e}")
+            print("="*60)
     else:
-        print("\n[INFO] No demos collected, nothing to save.")
+        print("\n" + "="*60)
+        print("[INFO] No demos collected, nothing to save.")
+        print("="*60)
     
     print("\n[INFO] All done! Exiting...")
     import sys

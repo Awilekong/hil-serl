@@ -30,17 +30,23 @@ class EnvConfig(DefaultEnvConfig):
         "wrist_1": {
             "serial_number": "323622271399",
             "dim": (1280, 720),
-            "exposure": 3000,
+            "exposure": 20000,
         },
         "wrist_2": {
             "serial_number": "323622271298",
             "dim": (1280, 720),
-            "exposure": 3000,
+            "exposure": 20000,
+        },
+        "side_policy": {
+            "serial_number": "323622271298",
+            "dim": (1280, 720),
+            "exposure": 20000,
         },
     }
     IMAGE_CROP = {
         "wrist_1": lambda img: img[3:697, 164:1100],
         "wrist_2": lambda img: img[1:710, 225:1246],
+        "side_policy": lambda img: img[1:710, 225:1246],
     }
     TARGET_POSE = np.array([0.5881241235410154,-0.03578590131997776,0.27843494179085326, np.pi, 0, 0])
     GRASP_POSE = np.array([0.5857508505445138,-0.22036261105675414,0.2731021902359492, np.pi, 0, 0])
@@ -96,11 +102,11 @@ class EnvConfig(DefaultEnvConfig):
 
 
 class TrainConfig(DefaultTrainingConfig):
-    image_keys = ["wrist_1", "wrist_2"]
+    image_keys = ["wrist_1", "wrist_2", "side_policy"]
     classifier_keys = ["wrist_1", "wrist_2"]
-    proprio_keys = ["tcp_pose", "tcp_vel", "tcp_force", "tcp_torque", "gripper_pose"]
+    proprio_keys = ["tcp_pose", "tcp_force", "tcp_torque"]
     buffer_period = 1000
-    checkpoint_period = 30
+    checkpoint_period = 50
     steps_per_update = 50
     encoder_type = "resnet-pretrained"
     setup_mode = "single-arm-fixed-gripper"
