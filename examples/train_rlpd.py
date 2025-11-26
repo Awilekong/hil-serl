@@ -413,20 +413,22 @@ def main(_):
     # replicate agent across devices
     # need the jnp.array to avoid a bug where device_put doesn't recognize primitives
     agent = jax.device_put(
-        jax.tree_map(jnp.array, agent), sharding.replicate()
+        jax.tree_util.tree_map(jnp.array, agent), sharding.replicate()
     )
 
     if FLAGS.checkpoint_path is not None and os.path.exists(FLAGS.checkpoint_path):
-        input("Checkpoint path already exists. Press Enter to resume training.")
-        ckpt = checkpoints.restore_checkpoint(
-            os.path.abspath(FLAGS.checkpoint_path),
-            agent.state,
-        )
-        agent = agent.replace(state=ckpt)
-        ckpt_number = os.path.basename(
-            checkpoints.latest_checkpoint(os.path.abspath(FLAGS.checkpoint_path))
-        )[11:]
-        print_green(f"Loaded previous checkpoint at step {ckpt_number}.")
+        latest_ckpt = checkpoints.latest_checkpoint(os.path.abspath(FLAGS.checkpoint_path))
+        if latest_ckpt is not None:
+            input("Checkpoint path already exists. Press Enter to resume training.")
+            ckpt = checkpoints.restore_checkpoint(
+                os.path.abspath(FLAGS.checkpoint_path),
+                agent.state,
+            )
+            agent = agent.replace(state=ckpt)
+            ckpt_number = os.path.basename(latest_ckpt)[11:]
+            print_green(f"Loaded previous checkpoint at step {ckpt_number}.")
+        else:
+            print_green(f"Checkpoint directory exists but no checkpoint files found. Starting fresh training.")
 
     def create_replay_buffer_and_wandb_logger():
         replay_buffer = MemoryEfficientReplayBufferDataStore(

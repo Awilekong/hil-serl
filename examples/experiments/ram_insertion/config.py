@@ -40,7 +40,7 @@ class EnvConfig(DefaultEnvConfig):
     }
     IMAGE_CROP = {
         "wrist_1": lambda img: img[150:450, 350:1100],
-        "wrist_2": lambda img: img[100:500, 400:900],
+        "wrist_2": lambda img: img[0:516, 387:1033],
     }
     TARGET_POSE = np.array([0.5881241235410154,-0.03578590131997776,0.27843494179085326, np.pi, 0, 0])
     GRASP_POSE = np.array([0.5857508505445138,-0.22036261105675414,0.2731021902359492, np.pi, 0, 0])
@@ -100,7 +100,7 @@ class TrainConfig(DefaultTrainingConfig):
     classifier_keys = ["wrist_1", "wrist_2"]
     proprio_keys = ["tcp_pose", "tcp_vel", "tcp_force", "tcp_torque", "gripper_pose"]
     buffer_period = 1000
-    checkpoint_period = 5000
+    checkpoint_period = 3000
     steps_per_update = 50
     encoder_type = "resnet-pretrained"
     setup_mode = "single-arm-fixed-gripper"

@@ -75,6 +75,24 @@ def main(_):
     config = CONFIG_MAPPING[FLAGS.exp_name]()
     env = config.get_environment(fake_env=False, save_video=False, classifier=True)
     
+    # HACK: Enable gripper control for demo collection only
+    # Find SpacemouseIntervention wrapper and enable gripper
+    current_env = env
+    spacemouse_wrapper = None
+    while hasattr(current_env, 'env'):
+        if current_env.__class__.__name__ == 'SpacemouseIntervention':
+            spacemouse_wrapper = current_env
+            break
+        current_env = current_env.env
+    
+    if spacemouse_wrapper is not None:
+        spacemouse_wrapper.gripper_enabled = True
+        print("[INFO] Gripper control ENABLED for demo collection")
+        print("[INFO] Use SpaceMouse LEFT button to CLOSE gripper")
+        print("[INFO] Use SpaceMouse RIGHT button to OPEN gripper")
+    else:
+        print("[WARN] SpacemouseIntervention wrapper not found, gripper control may not work")
+    
     # Temporarily increase ACTION_SCALE for better teleoperation
     if hasattr(env.unwrapped, 'action_scale'):
         original_action_scale = env.unwrapped.action_scale
