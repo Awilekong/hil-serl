@@ -86,10 +86,9 @@ def main(_):
         current_env = current_env.env
     
     if spacemouse_wrapper is not None:
-        spacemouse_wrapper.gripper_enabled = True
-        print("[INFO] Gripper control ENABLED for demo collection")
-        print("[INFO] Use SpaceMouse LEFT button to CLOSE gripper")
-        print("[INFO] Use SpaceMouse RIGHT button to OPEN gripper")
+        spacemouse_wrapper.gripper_enabled = False
+        print("[INFO] Gripper control DISABLED for demo collection")
+        print("[INFO] Gripper will remain in fixed position")
     else:
         print("[WARN] SpacemouseIntervention wrapper not found, gripper control may not work")
     
