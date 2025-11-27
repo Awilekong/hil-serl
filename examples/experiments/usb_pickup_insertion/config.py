@@ -20,19 +20,31 @@ from experiments.usb_pickup_insertion.wrapper import USBEnv, GripperPenaltyWrapp
 
 class EnvConfig(DefaultEnvConfig):
     SERVER_URL: str = "http://127.0.0.2:5000/"
+    # REALSENSE_CAMERAS = {
+    #     "wrist_1": {
+    #         "serial_number": "127122270350",
+    #         "dim": (1280, 720),
+    #         "exposure": 10500,
+    #     },
+    #     "wrist_2": {
+    #         "serial_number": "127122270146",
+    #         "dim": (1280, 720),
+    #         "exposure": 10500,
+    #     },
+    #     "side_policy": {
+    #         "serial_number": "130322274175",
+    #         "dim": (1280, 720),
+    #         "exposure": 13000,
+    #     },
+    #     "side_classifier": {
+    #         "serial_number": "130322274175",
+    #         "dim": (1280, 720),
+    #         "exposure": 13000,
+    #     },
+    # }
     REALSENSE_CAMERAS = {
-        "wrist_1": {
-            "serial_number": "127122270350",
-            "dim": (1280, 720),
-            "exposure": 10500,
-        },
-        "wrist_2": {
-            "serial_number": "127122270146",
-            "dim": (1280, 720),
-            "exposure": 10500,
-        },
         "side_policy": {
-            "serial_number": "130322274175",
+            "serial_number": "337322071878",
             "dim": (1280, 720),
             "exposure": 13000,
         },

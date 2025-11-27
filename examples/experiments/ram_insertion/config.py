@@ -27,16 +27,16 @@ from experiments.ram_insertion.wrapper import RAMEnv
 class EnvConfig(DefaultEnvConfig):
     SERVER_URL = "http://192.168.31.1:5000/"
     REALSENSE_CAMERAS = {
-        "wrist_1": {
-            "serial_number": "323622271399",
-            "dim": (1280, 720),
-            "exposure": 15000,
-        },
-        "wrist_2": {
-            "serial_number": "323622271298",
-            "dim": (1280, 720),
-            "exposure": 15000,
-        },
+        # "wrist_1": {
+        #     "serial_number": "323622271399",
+        #     "dim": (1280, 720),
+        #     "exposure": 15000,
+        # },
+        # "wrist_2": {
+        #     "serial_number": "323622271298",
+        #     "dim": (1280, 720),
+        #     "exposure": 15000,
+        # },
         "side_policy": {
             "serial_number": "337322071878",
             "dim": (1280, 720),
@@ -44,8 +44,8 @@ class EnvConfig(DefaultEnvConfig):
         },
     }
     IMAGE_CROP = {
-        "wrist_1": lambda img: img[0:672, 337:1100],
-        "wrist_2": lambda img: img[0:667, 272:1078],
+        # "wrist_1": lambda img: img[0:672, 337:1100],
+        # "wrist_2": lambda img: img[0:667, 272:1078],
         "side_policy": lambda img: img[20:437, 713:1005],
     }
     TARGET_POSE = np.array([0.49744457054666935,0.0919928241333075,0.36115641546634597,3.1018905281570124,0.011789309703986284,0.17180922207144644])
