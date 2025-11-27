@@ -30,32 +30,34 @@ class EnvConfig(DefaultEnvConfig):
         "wrist_1": {
             "serial_number": "323622271399",
             "dim": (1280, 720),
-            "exposure": 20000,
+            "exposure": 15000,
         },
         "wrist_2": {
             "serial_number": "323622271298",
             "dim": (1280, 720),
-            "exposure": 20000,
+            "exposure": 15000,
         },
         "side_policy": {
-            "serial_number": "323622271298",
+            "serial_number": "337322071878",
             "dim": (1280, 720),
             "exposure": 20000,
         },
     }
     IMAGE_CROP = {
-        "wrist_1": lambda img: img[3:697, 164:1100],
-        "wrist_2": lambda img: img[1:710, 225:1246],
-        "side_policy": lambda img: img[1:710, 225:1246],
+        "wrist_1": lambda img: img[0:672, 337:1100],
+        "wrist_2": lambda img: img[0:667, 272:1078],
+        "side_policy": lambda img: img[20:437, 713:1005],
     }
-    TARGET_POSE = np.array([0.5881241235410154,-0.03578590131997776,0.27843494179085326, np.pi, 0, 0])
-    GRASP_POSE = np.array([0.5857508505445138,-0.22036261105675414,0.2731021902359492, np.pi, 0, 0])
+    TARGET_POSE = np.array([0.49744457054666935,0.0919928241333075,0.36115641546634597,3.1018905281570124,0.011789309703986284,0.17180922207144644])
+    GRASP_POSE = np.array([0.5263224335435672,0.09507273418571915,0.3035006410211304,3.139808206895009,0.07457123754665163,0.15232568506350241])
     RESET_POSE = TARGET_POSE + np.array([0, 0, 0.05, 0, 0.05, 0])
-    ABS_POSE_LIMIT_LOW = TARGET_POSE - np.array([0.08, 0.06, 0.03, 0.03, 0.3, 0.8])
-    ABS_POSE_LIMIT_HIGH = TARGET_POSE + np.array([0.08, 0.06, 0.12, 0.03, 0.3, 0.8])
+    # ABS_POSE_LIMIT_LOW = TARGET_POSE - np.array([0.08, 0.06, 0.03, 0.03, 0.3, 0.8])
+    # ABS_POSE_LIMIT_HIGH = TARGET_POSE + np.array([0.08, 0.06, 0.12, 0.03, 0.3, 0.8])
+    ABS_POSE_LIMIT_LOW = TARGET_POSE - np.array([0.02, 0.03, 0.07, 0.03, 0.3, 0.8])
+    ABS_POSE_LIMIT_HIGH = TARGET_POSE + np.array([0.03, 0.03, 0.01, 0.03, 0.3, 0.8])
     RANDOM_RESET = True
-    RANDOM_XY_RANGE = 0.02
-    RANDOM_RZ_RANGE = 0.05
+    RANDOM_XY_RANGE = 0.01
+    RANDOM_RZ_RANGE = 0.01
     ACTION_SCALE = (0.01, 0.06, 1)  # Original scale for training
     DISPLAY_IMAGE = True
     MAX_EPISODE_LENGTH = 100
@@ -103,7 +105,7 @@ class EnvConfig(DefaultEnvConfig):
 
 class TrainConfig(DefaultTrainingConfig):
     image_keys = ["wrist_1", "wrist_2", "side_policy"]
-    classifier_keys = ["wrist_1", "wrist_2"]
+    classifier_keys = ["side_policy"]
     proprio_keys = ["tcp_pose", "tcp_force", "tcp_torque"]
     buffer_period = 1000
     checkpoint_period = 50

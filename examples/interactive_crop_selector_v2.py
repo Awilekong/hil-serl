@@ -32,39 +32,66 @@ class CropSelector:
         self.temp_image = None
         self.camera = None
         
-    def initialize_camera(self):
-        """Initialize the RealSense camera using RSCapture"""
+    def initialize_camera(self, max_retries=3):
+        """Initialize the RealSense camera using RSCapture with retry logic"""
         print(f"\n初始化相机 {self.camera_name} (序列号: {self.serial_number})...")
         print(f"分辨率: {self.dimensions}, 曝光: {self.exposure}")
         
-        try:
-            self.camera = RSCapture(
-                name=self.camera_name,
-                serial_number=self.serial_number,
-                dim=self.dimensions,
-                fps=15,
-                depth=False,
-                exposure=self.exposure
-            )
-            print(f"✓ 相机 {self.camera_name} 初始化成功!")
-            
-            # Wait for camera to stabilize
-            print("等待相机稳定...")
-            for i in range(5):
-                ret, _ = self.camera.read()
-                if ret:
-                    print(f"  帧 {i+1}/5 成功")
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    print(f"重试 {attempt}/{max_retries-1}...")
+                    time.sleep(2)  # Wait before retry
+                
+                self.camera = RSCapture(
+                    name=self.camera_name,
+                    serial_number=self.serial_number,
+                    dim=self.dimensions,
+                    fps=15,
+                    depth=False,
+                    exposure=self.exposure
+                )
+                print(f"✓ 相机 {self.camera_name} 初始化成功!")
+                
+                # Wait for camera to stabilize
+                print("等待相机稳定...")
+                stable_frames = 0
+                for i in range(10):  # Try up to 10 frames
+                    ret, _ = self.camera.read()
+                    if ret:
+                        stable_frames += 1
+                        if stable_frames <= 5:  # Only print first 5
+                            print(f"  帧 {stable_frames}/5 成功")
+                        if stable_frames >= 5:
+                            break
+                    time.sleep(0.2)
+                
+                if stable_frames >= 5:
+                    return True
                 else:
-                    print(f"  帧 {i+1}/5 失败")
-                time.sleep(0.2)
-            
-            return True
-            
-        except Exception as e:
-            print(f"✗ 初始化失败: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
+                    print(f"⚠️  只获取到 {stable_frames} 帧，继续尝试...")
+                    if self.camera:
+                        self.camera.close()
+                        self.camera = None
+                        time.sleep(1)
+                
+            except Exception as e:
+                print(f"✗ 初始化失败 (尝试 {attempt+1}/{max_retries}): {e}")
+                if self.camera:
+                    try:
+                        self.camera.close()
+                    except:
+                        pass
+                    self.camera = None
+                
+                if attempt < max_retries - 1:
+                    print("等待后重试...")
+                    time.sleep(3)
+                else:
+                    import traceback
+                    traceback.print_exc()
+        
+        return False
     
     def capture_image(self):
         """Capture a single image from the camera"""
@@ -199,11 +226,21 @@ class CropSelector:
         """Stop the camera"""
         try:
             if self.camera is not None:
+                print(f"正在关闭相机 {self.camera_name}...")
                 self.camera.close()
-                print(f"相机 {self.camera_name} 已关闭")
+                print(f"✓ 相机 {self.camera_name} 已关闭")
+                self.camera = None
+                
+                # Important: Wait for the camera to fully release
+                print("等待相机资源完全释放...")
+                time.sleep(2)  # Give time for camera to fully disconnect
+                
         except Exception as e:
             print(f"关闭相机时出错: {e}")
+        
         cv2.destroyAllWindows()
+        # Additional wait after closing windows
+        time.sleep(0.5)
 
 
 def parse_config_file(config_path):
@@ -316,14 +353,47 @@ def main():
     
     # Parse config
     cameras, original_content = parse_config_file(config_path)
-    print(f"\n找到 {len(cameras)} 个相机:")
+    print(f"\n找到 {len(cameras)} 个相机配置:")
     for name, config in cameras.items():
         print(f"  - {name}: {config['serial_number']}")
     
+    # Check which cameras are actually connected
+    print("\n检查连接的相机...")
+    try:
+        available_serials = RSCapture.get_device_serial_numbers()
+        print(f"检测到 {len(available_serials)} 个RealSense设备:")
+        for sn in available_serials:
+            print(f"  ✓ {sn}")
+        
+        # Check which configured cameras are available
+        missing_cameras = []
+        for name, config in cameras.items():
+            if config['serial_number'] not in available_serials:
+                missing_cameras.append(name)
+        
+        if missing_cameras:
+            print(f"\n⚠️  警告: 以下相机未连接:")
+            for name in missing_cameras:
+                print(f"  - {name} (序列号: {cameras[name]['serial_number']})")
+            print("\n将只处理已连接的相机。")
+            
+            user_input = input("\n是否继续? (y/n): ").strip().lower()
+            if user_input != 'y':
+                print("已取消")
+                return
+    except Exception as e:
+        print(f"⚠️  无法检查相机: {e}")
+        print("将尝试直接初始化相机...")
+    
     # Process each camera
     crop_results = {}
+    camera_count = len(cameras)
     
-    for camera_name, camera_config in cameras.items():
+    for idx, (camera_name, camera_config) in enumerate(cameras.items(), 1):
+        print("\n" + "=" * 60)
+        print(f"处理相机 {idx}/{camera_count}: {camera_name}")
+        print("=" * 60)
+        
         selector = CropSelector(
             camera_name,
             camera_config['serial_number'],
@@ -334,15 +404,27 @@ def main():
         try:
             # Initialize camera
             if not selector.initialize_camera():
-                print(f"跳过相机 {camera_name}")
+                print(f"⚠️  跳过相机 {camera_name} (初始化失败)")
                 continue
             
-            # Capture a few frames to stabilize
+            # Capture initial images to ensure stability
             print("捕获初始图像...")
-            for i in range(3):
+            success_count = 0
+            for i in range(5):
                 if selector.capture_image() is not None:
-                    print(f"  ✓ 图像 {i+1}/3")
-                    time.sleep(0.1)
+                    success_count += 1
+                    if success_count <= 3:  # Only print first 3
+                        print(f"  ✓ 图像 {success_count}/3")
+                    if success_count >= 3:
+                        break
+                time.sleep(0.15)
+            
+            if success_count < 3:
+                print(f"⚠️  警告: 只捕获到 {success_count} 张图像，可能不稳定")
+                user_input = input("是否继续? (y/n): ").strip().lower()
+                if user_input != 'y':
+                    print(f"跳过相机 {camera_name}")
+                    continue
             
             # Interactive selection
             crop_coords = selector.select_crop_region()
@@ -365,8 +447,11 @@ def main():
         finally:
             # Make sure to cleanup before moving to next camera
             selector.cleanup()
-            # Add a delay between cameras
-            time.sleep(1)
+            
+            # Add extra delay between cameras (important for USB bandwidth)
+            if idx < camera_count:  # Not the last camera
+                print(f"\n等待 3 秒后处理下一个相机...")
+                time.sleep(3)
     
     # Update config file
     if crop_results:

@@ -100,13 +100,14 @@ def main(_):
         print(f"      Original: {original_action_scale}")
         print(f"      Current:  {env.unwrapped.action_scale}")
     
-    # Disable XYZ safety box clipping
-    if hasattr(env.unwrapped, 'xyz_bounding_box'):
-        original_xyz_box = (env.unwrapped.xyz_bounding_box.low.copy(), 
-                           env.unwrapped.xyz_bounding_box.high.copy())
-        env.unwrapped.xyz_bounding_box.low = np.array([-10.0, -10.0, -10.0])
-        env.unwrapped.xyz_bounding_box.high = np.array([10.0, 10.0, 10.0])
-        print("[INFO] XYZ safety box limits DISABLED for data collection")
+    # Keep safety limits enabled (do not disable them)
+    print("[INFO] XYZ safety box limits ENABLED (keeping original limits)")
+    print("[INFO] Pose limits ENABLED (keeping original limits)")
+    if hasattr(env.unwrapped, 'config'):
+        env_config = env.unwrapped.config
+        print(f"      X range: [{env_config.ABS_POSE_LIMIT_LOW[0]:.3f}, {env_config.ABS_POSE_LIMIT_HIGH[0]:.3f}]")
+        print(f"      Y range: [{env_config.ABS_POSE_LIMIT_LOW[1]:.3f}, {env_config.ABS_POSE_LIMIT_HIGH[1]:.3f}]")
+        print(f"      Z range: [{env_config.ABS_POSE_LIMIT_LOW[2]:.3f}, {env_config.ABS_POSE_LIMIT_HIGH[2]:.3f}]")
     
     # Reset only once at the beginning
     obs, info = env.reset()
@@ -261,10 +262,7 @@ def main(_):
             env.unwrapped.action_scale = original_action_scale
             print("[INFO] ACTION_SCALE restored")
         
-        if hasattr(env.unwrapped, 'xyz_bounding_box'):
-            env.unwrapped.xyz_bounding_box.low = original_xyz_box[0]
-            env.unwrapped.xyz_bounding_box.high = original_xyz_box[1]
-            print("[INFO] XYZ safety box limits restored")
+        print("[INFO] Safety limits kept at original values (not modified)")
         
         try:
             listener.stop()

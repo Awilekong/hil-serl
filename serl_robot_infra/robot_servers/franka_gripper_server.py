@@ -34,7 +34,7 @@ class FrankaGripperServer(GripperServer):
         if self.binary_gripper_pose == 1:
             return
         msg = GraspActionGoal()
-        msg.goal.width = 0.01
+        msg.goal.width = 0
         msg.goal.speed = 0.3
         msg.goal.epsilon.inner = 1
         msg.goal.epsilon.outer = 1
