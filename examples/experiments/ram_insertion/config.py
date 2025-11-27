@@ -58,7 +58,7 @@ class EnvConfig(DefaultEnvConfig):
     RANDOM_RESET = True
     RANDOM_XY_RANGE = 0.01
     RANDOM_RZ_RANGE = 0.01
-    ACTION_SCALE = (0.01, 0.06, 1)  # Original scale for training
+    ACTION_SCALE = (0.05, 0.06, 1)  # Original scale for training
     DISPLAY_IMAGE = True
     MAX_EPISODE_LENGTH = 100
     COMPLIANCE_PARAM = {

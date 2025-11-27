@@ -48,7 +48,7 @@ class EnvConfig(DefaultEnvConfig):
                   "side_classifier": lambda img: img[270:398, 500:628]}
     TARGET_POSE = np.array([0.553,0.1769683108549487,0.25097833796596336, np.pi, 0, -np.pi/2])
     RESET_POSE = TARGET_POSE + np.array([0, 0.03, 0.05, 0, 0, 0])
-    ACTION_SCALE = np.array([0.015, 0.1, 1])
+    ACTION_SCALE = np.array([1, 0.1, 1])
     RANDOM_RESET = True
     DISPLAY_IMAGE = True
     RANDOM_XY_RANGE = 0.01

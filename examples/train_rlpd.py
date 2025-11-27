@@ -153,6 +153,14 @@ def actor(agent, data_store, intvn_data_store, env, sampling_rng):
     for step in pbar:
         timer.tick("total")
 
+        # 阶段标识打印
+        if step == 0:
+            print("[TRAINING] 阶段1: 随机探索 (step < random_steps)")
+        elif step == config.random_steps:
+            print("[TRAINING] 阶段2: 策略网络探索 (step >= random_steps, < training_starts)")
+        elif step == config.training_starts:
+            print("[TRAINING] 阶段3: 正式训练 (step >= training_starts)")
+
         with timer.context("sample_actions"):
             if step < config.random_steps:
                 actions = env.action_space.sample()
@@ -167,12 +175,9 @@ def actor(agent, data_store, intvn_data_store, env, sampling_rng):
 
         # Step environment
         with timer.context("step_env"):
-
             next_obs, reward, done, truncated, info = env.step(actions)
-            if "left" in info:
-                info.pop("left")
-            if "right" in info:
-                info.pop("right")
+            # 实时打印reward和done
+            print(f"[STEP {step}] Reward: {reward} | Done: {done} | Actions: {actions}")
 
             # override the action with the intervention action
             if "intervene_action" in info:
@@ -203,6 +208,7 @@ def actor(agent, data_store, intvn_data_store, env, sampling_rng):
 
             obs = next_obs
             if done or truncated:
+                print(f"[EPISODE END] step={step} | episode_return={running_return} | reward={reward} | done={done}")
                 info["episode"]["intervention_count"] = intervention_count
                 info["episode"]["intervention_steps"] = intervention_steps
                 stats = {"environment": info}  # send stats to the learner to log
@@ -360,7 +366,15 @@ def learner(rng, agent, replay_buffer, demo_buffer, wandb_logger=None):
 
 def main(_):
     global config
+    # 读取实验配置
     config = CONFIG_MAPPING[FLAGS.exp_name]()
+    # 打印本次训练使用的 action scale 信息
+    if hasattr(config, "ACTION_SCALE"):
+        print(f"[CONFIG] 本次训练使用的 ACTION_SCALE: {config.ACTION_SCALE}")
+    elif hasattr(config, "action_scale"):
+        print(f"[CONFIG] 本次训练使用的 action_scale: {config.action_scale}")
+    else:
+        print("[CONFIG] 未在 config 中找到 ACTION_SCALE 信息")
 
     assert config.batch_size % num_devices == 0
     # seed
